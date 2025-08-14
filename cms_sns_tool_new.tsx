@@ -38,6 +38,174 @@ import {
   Database
 } from 'lucide-react';
 
+// 動的コンテンツフォームコンポーネント
+const DynamicContentForm = ({ fields, onSubmit }) => {
+  const [formData, setFormData] = useState({});
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  const handleFieldChange = (fieldName, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: value
+    }));
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {fields.map((field, index) => (
+          <div key={index} className={field.suggested ? 'border-2 border-dashed border-yellow-300 p-3 rounded-lg' : ''}>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+              {field.suggested && <span className="text-yellow-600 ml-1">(提案)</span>}
+            </label>
+            
+            {field.type === 'textarea' ? (
+              <textarea
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                placeholder={field.placeholder}
+                value={formData[field.name] || ''}
+                onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                required={field.required}
+              />
+            ) : field.type === 'select' ? (
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                value={formData[field.name] || ''}
+                onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                required={field.required}
+              >
+                <option value="">選択してください</option>
+                {field.options?.map((option, optIndex) => (
+                  <option key={optIndex} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            ) : field.type === 'date' ? (
+              <input
+                type="date"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                value={formData[field.name] || ''}
+                onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                required={field.required}
+              />
+            ) : (
+              <input
+                type={field.type === 'url' ? 'url' : field.type === 'email' ? 'email' : 'text'}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                placeholder={field.placeholder}
+                value={formData[field.name] || ''}
+                onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                required={field.required}
+              />
+            )}
+            
+            {field.reason && (
+              <p className="mt-1 text-xs text-yellow-600">{field.reason}</p>
+            )}
+          </div>
+        ))}
+      </div>
+      
+      <div className="flex space-x-3 pt-4">
+        <button
+          type="submit"
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Save className="w-4 h-4 mr-2" />
+          生成
+        </button>
+        <button
+          type="button"
+          className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          onClick={() => setFormData({})}
+        >
+          <X className="w-4 h-4 mr-2" />
+          リセット
+        </button>
+      </div>
+    </form>
+  );
+};
+
+// スキーマ設定モーダルコンポーネント
+const SchemaConfigModal = ({ schema, framework, onSave, onCancel }) => {
+  const [editedSchema, setEditedSchema] = useState(schema);
+
+  const handleSave = () => {
+    onSave(editedSchema);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h4 className="font-medium text-blue-900 mb-2">
+          {framework} フレームワーク用スキーマ設定
+        </h4>
+        <p className="text-sm text-blue-700">
+          検出されたフィールドと提案フィールドを確認し、必要に応じて調整してください。
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <h4 className="font-medium text-gray-900 mb-3">検出されたフィールド</h4>
+          <div className="space-y-2 max-h-60 overflow-auto">
+            {editedSchema.detectedFields.map((field, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="font-medium text-gray-900">{field}</span>
+                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                  {editedSchema.fieldTypes[field]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-medium text-gray-900 mb-3">提案フィールド</h4>
+          <div className="space-y-2 max-h-60 overflow-auto">
+            {editedSchema.suggestions.map((suggestion, index) => (
+              <div key={index} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-gray-900">{suggestion.field}</span>
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                    {suggestion.type}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">{suggestion.reason}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex space-x-3 pt-4 border-t">
+        <button
+          onClick={handleSave}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Check className="w-4 h-4 mr-2" />
+          保存してフォーム生成
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          <X className="w-4 h-4 mr-2" />
+          キャンセル
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const CMS_SNS_Tool = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedFile, setSelectedFile] = useState(null);
@@ -197,60 +365,128 @@ const CMS_SNS_Tool = () => {
     { id: 'settings', name: '設定', icon: Settings },
   ];
 
+  // サンプルリポジトリ構造
+  const repoStructure = {
+    'README.md': { type: 'file', content: '# 会社コーポレートサイト\n\nAstroで構築されたコーポレートサイトです。' },
+    'package.json': { type: 'file', content: '{\n  "name": "corporate-site",\n  "version": "1.0.0",\n  "scripts": {\n    "dev": "astro dev",\n    "build": "astro build"\n  },\n  "dependencies": {\n    "astro": "^4.0.0"\n  }\n}' },
+    'astro.config.mjs': { type: 'file', content: 'import { defineConfig } from \'astro/config\';\n\nexport default defineConfig({});' },
+    'src': {
+      type: 'folder',
+      children: {
+        'pages': {
+          type: 'folder',
+          children: {
+            'index.astro': { type: 'file', content: '---\ntitle: "ホーム"\n---\n\n<html>\n<head>\n  <title>{title}</title>\n</head>\n<body>\n  <h1>会社ホームページ</h1>\n  <p>私たちの会社について</p>\n</body>\n</html>' },
+            'about.astro': { type: 'file', content: '---\ntitle: "会社概要"\n---\n\n<html>\n<head>\n  <title>{title}</title>\n</head>\n<body>\n  <h1>会社概要</h1>\n  <p>設立: 2020年</p>\n  <p>従業員数: 50名</p>\n</body>\n</html>' },
+            'contact.astro': { type: 'file', content: '---\ntitle: "お問い合わせ"\n---\n\n<html>\n<head>\n  <title>{title}</title>\n</head>\n<body>\n  <h1>お問い合わせ</h1>\n  <p>TEL: 03-1234-5678</p>\n  <p>Email: info@company.com</p>\n</body>\n</html>' }
+          }
+        },
+        'content': {
+          type: 'folder',
+          children: {
+            'news': {
+              type: 'folder',
+              children: {
+                'news-2024-08-01.md': { type: 'file', content: '---\ntitle: "新製品リリースのお知らせ"\ndate: "2024-08-01"\nauthor: "広報部"\ntags: ["新製品", "リリース"]\ncategory: "ニュース"\n---\n\n# 新製品リリースのお知らせ\n\n2024年8月1日、弊社の新製品をリリースいたします。\n\n## 主な特徴\n- 高性能\n- 省エネ\n- コスト効率\n\nお客様にはより良いサービスを提供してまいります。' },
+                'news-2024-07-15.md': { type: 'file', content: '---\ntitle: "夏季休業のお知らせ"\ndate: "2024-07-15"\nauthor: "総務部"\ntags: ["お知らせ"]\ncategory: "ニュース"\n---\n\n# 夏季休業のお知らせ\n\n平素は格別のご高配を賜り、厚く御礼申し上げます。\n\n弊社では下記の期間を夏季休業とさせていただきます。\n\n**休業期間：2024年8月10日（土）～ 8月18日（日）**\n\nご不便をおかけいたしますが、何卒ご了承ください。' }
+              }
+            },
+            'pages': {
+              type: 'folder',
+              children: {
+                'company-info.md': { type: 'file', content: '---\ntitle: "会社情報"\ndescription: "株式会社サンプルの会社情報"\npublishedAt: "2024-01-01"\nauthor: "管理者"\n---\n\n# 会社情報\n\n## 基本情報\n- 会社名: 株式会社サンプル\n- 設立: 2020年4月1日\n- 資本金: 1,000万円\n- 代表者: 山田太郎\n\n## 事業内容\n- ソフトウェア開発\n- Webサイト制作\n- ITコンサルティング' }
+              }
+            }
+          }
+        },
+        'components': {
+          type: 'folder',
+          children: {
+            'Header.astro': { type: 'file', content: '---\n---\n\n<header class="header">\n  <nav>\n    <a href="/">ホーム</a>\n    <a href="/about">会社概要</a>\n    <a href="/contact">お問い合わせ</a>\n  </nav>\n</header>\n\n<style>\n.header {\n  background: #f8f9fa;\n  padding: 1rem;\n}\n</style>' },
+            'Footer.astro': { type: 'file', content: '---\n---\n\n<footer class="footer">\n  <p>&copy; 2024 株式会社サンプル. All rights reserved.</p>\n</footer>\n\n<style>\n.footer {\n  background: #343a40;\n  color: white;\n  text-align: center;\n  padding: 2rem;\n}\n</style>' }
+          }
+        }
+      }
+    },
+    'public': {
+      type: 'folder',
+      children: {
+        'favicon.ico': { type: 'file', content: 'Binary file' },
+        'logo.png': { type: 'file', content: 'Binary file' }
+      }
+    }
+  };
+
+  const recentFiles = [
+    { name: 'news-2024-08.md', path: 'src/content/news/', modified: '2時間前', status: 'draft' },
+    { name: 'about.astro', path: 'src/pages/', modified: '1日前', status: 'published' },
+    { name: 'company-info.md', path: 'src/content/pages/', modified: '3日前', status: 'published' }
+  ];
+
+  const scheduledPosts = [
+    { platform: 'Twitter', content: '新製品リリースのお知らせ...', scheduledFor: '今日 14:00', status: 'pending' },
+    { platform: 'YouTube', content: '会社説明動画の投稿', scheduledFor: '明日 10:00', status: 'pending' },
+    { platform: 'Discord', content: 'コミュニティへのお知らせ', scheduledFor: '今日 18:00', status: 'scheduled' }
+  ];
+
   // フレームワーク検出機能
   const detectFramework = useCallback(() => {
     setIsAnalyzing(true);
     
-    // リポジトリ構造からフレームワークを検出
-    const detectedConfigs = [];
-    
-    Object.entries(supportedFrameworks).forEach(([key, framework]) => {
-      framework.configFiles.forEach(configFile => {
-        if (repoStructure[configFile]) {
-          detectedConfigs.push({ framework: key, confidence: 0.9, configFile });
-        }
+    try {
+      // リポジトリ構造からフレームワークを検出
+      const detectedConfigs = [];
+      
+      Object.entries(supportedFrameworks).forEach(([key, framework]) => {
+        framework.configFiles.forEach(configFile => {
+          if (repoStructure[configFile]) {
+            detectedConfigs.push({ framework: key, confidence: 0.9, configFile });
+          }
+        });
       });
-    });
-    
-    // package.json の dependencies から検出
-    if (repoStructure['package.json']) {
-      const packageContent = repoStructure['package.json'].content;
-      try {
-        const pkg = JSON.parse(packageContent);
-        const dependencies = { ...pkg.dependencies, ...pkg.devDependencies };
-        
-        if (dependencies.astro) {
-          detectedConfigs.push({ framework: 'astro', confidence: 0.95, source: 'package.json' });
+      
+      // package.json の dependencies から検出
+      if (repoStructure['package.json']) {
+        const packageContent = repoStructure['package.json'].content;
+        try {
+          const pkg = JSON.parse(packageContent);
+          const dependencies = { ...pkg.dependencies, ...pkg.devDependencies };
+          
+          if (dependencies.astro) {
+            detectedConfigs.push({ framework: 'astro', confidence: 0.95, source: 'package.json' });
+          }
+          if (dependencies.next) {
+            detectedConfigs.push({ framework: 'nextjs', confidence: 0.95, source: 'package.json' });
+          }
+          if (dependencies.nuxt) {
+            detectedConfigs.push({ framework: 'nuxt', confidence: 0.95, source: 'package.json' });
+          }
+          if (dependencies['@sveltejs/kit']) {
+            detectedConfigs.push({ framework: 'svelte', confidence: 0.95, source: 'package.json' });
+          }
+          if (dependencies.gatsby) {
+            detectedConfigs.push({ framework: 'gatsby', confidence: 0.95, source: 'package.json' });
+          }
+          if (dependencies['@remix-run/node']) {
+            detectedConfigs.push({ framework: 'remix', confidence: 0.95, source: 'package.json' });
+          }
+        } catch (e) {
+          console.warn('package.json の解析に失敗:', e);
         }
-        if (dependencies.next) {
-          detectedConfigs.push({ framework: 'nextjs', confidence: 0.95, source: 'package.json' });
-        }
-        if (dependencies.nuxt) {
-          detectedConfigs.push({ framework: 'nuxt', confidence: 0.95, source: 'package.json' });
-        }
-        if (dependencies['@sveltejs/kit']) {
-          detectedConfigs.push({ framework: 'svelte', confidence: 0.95, source: 'package.json' });
-        }
-        if (dependencies.gatsby) {
-          detectedConfigs.push({ framework: 'gatsby', confidence: 0.95, source: 'package.json' });
-        }
-        if (dependencies['@remix-run/node']) {
-          detectedConfigs.push({ framework: 'remix', confidence: 0.95, source: 'package.json' });
-        }
-      } catch (e) {
-        console.warn('package.json の解析に失敗:', e);
       }
+      
+      // 最も信頼度の高いフレームワークを選択
+      if (detectedConfigs.length > 0) {
+        const bestMatch = detectedConfigs.reduce((best, current) => 
+          current.confidence > best.confidence ? current : best
+        );
+        setDetectedFramework(bestMatch.framework);
+      }
+    } catch (error) {
+      console.error('フレームワーク検出エラー:', error);
+    } finally {
+      setIsAnalyzing(false);
     }
-    
-    // 最も信頼度の高いフレームワークを選択
-    if (detectedConfigs.length > 0) {
-      const bestMatch = detectedConfigs.reduce((best, current) => 
-        current.confidence > best.confidence ? current : best
-      );
-      setDetectedFramework(bestMatch.framework);
-    }
-    
-    setIsAnalyzing(false);
   }, [repoStructure]);
 
   // コンテンツスキーマ解析
@@ -311,7 +547,7 @@ const CMS_SNS_Tool = () => {
       analyzeFileStructure(repoStructure);
       
       // 追加提案
-      addSchemaeSuggestions(schema);
+      addSchemaSuggestions(schema);
       
       setContentSchema(schema);
       generateDynamicForm(schema);
@@ -347,7 +583,7 @@ const CMS_SNS_Tool = () => {
             try {
               value = JSON.parse(value);
             } catch {
-              value = value.slice(1, -1).split(',').map(v => v.trim());
+              value = value.slice(1, -1).split(',').map(v => v.trim().replace(/['"]/g, ''));
             }
           }
           
@@ -448,7 +684,7 @@ const CMS_SNS_Tool = () => {
   };
 
   // スキーマ提案追加
-  const addSchemaeSuggestions = (schema) => {
+  const addSchemaSuggestions = (schema) => {
     const commonFields = ['title', 'description', 'publishedAt', 'author', 'tags', 'category'];
     
     commonFields.forEach(field => {
@@ -612,70 +848,6 @@ const CMS_SNS_Tool = () => {
     
     return [];
   };
-
-  // サンプルリポジトリ構造
-  const repoStructure = {
-    'README.md': { type: 'file', content: '# 会社コーポレートサイト\n\nAstroで構築されたコーポレートサイトです。' },
-    'package.json': { type: 'file', content: '{\n  "name": "corporate-site",\n  "version": "1.0.0",\n  "scripts": {\n    "dev": "astro dev",\n    "build": "astro build"\n  }\n}' },
-    'astro.config.mjs': { type: 'file', content: 'import { defineConfig } from \'astro/config\';\n\nexport default defineConfig({});' },
-    'src': {
-      type: 'folder',
-      children: {
-        'pages': {
-          type: 'folder',
-          children: {
-            'index.astro': { type: 'file', content: '---\ntitle: "ホーム"\n---\n\n<html>\n<head>\n  <title>{title}</title>\n</head>\n<body>\n  <h1>会社ホームページ</h1>\n  <p>私たちの会社について</p>\n</body>\n</html>' },
-            'about.astro': { type: 'file', content: '---\ntitle: "会社概要"\n---\n\n<html>\n<head>\n  <title>{title}</title>\n</head>\n<body>\n  <h1>会社概要</h1>\n  <p>設立: 2020年</p>\n  <p>従業員数: 50名</p>\n</body>\n</html>' },
-            'contact.astro': { type: 'file', content: '---\ntitle: "お問い合わせ"\n---\n\n<html>\n<head>\n  <title>{title}</title>\n</head>\n<body>\n  <h1>お問い合わせ</h1>\n  <p>TEL: 03-1234-5678</p>\n  <p>Email: info@company.com</p>\n</body>\n</html>' }
-          }
-        },
-        'content': {
-          type: 'folder',
-          children: {
-            'news': {
-              type: 'folder',
-              children: {
-                'news-2024-08-01.md': { type: 'file', content: '---\ntitle: "新製品リリースのお知らせ"\ndate: "2024-08-01"\nauthor: "広報部"\n---\n\n# 新製品リリースのお知らせ\n\n2024年8月1日、弊社の新製品をリリースいたします。\n\n## 主な特徴\n- 高性能\n- 省エネ\n- コスト効率\n\nお客様にはより良いサービスを提供してまいります。' },
-                'news-2024-07-15.md': { type: 'file', content: '---\ntitle: "夏季休業のお知らせ"\ndate: "2024-07-15"\nauthor: "総務部"\n---\n\n# 夏季休業のお知らせ\n\n平素は格別のご高配を賜り、厚く御礼申し上げます。\n\n弊社では下記の期間を夏季休業とさせていただきます。\n\n**休業期間：2024年8月10日（土）～ 8月18日（日）**\n\nご不便をおかけいたしますが、何卒ご了承ください。' }
-              }
-            },
-            'pages': {
-              type: 'folder',
-              children: {
-                'company-info.md': { type: 'file', content: '---\ntitle: "会社情報"\n---\n\n# 会社情報\n\n## 基本情報\n- 会社名: 株式会社サンプル\n- 設立: 2020年4月1日\n- 資本金: 1,000万円\n- 代表者: 山田太郎\n\n## 事業内容\n- ソフトウェア開発\n- Webサイト制作\n- ITコンサルティング' }
-              }
-            }
-          }
-        },
-        'components': {
-          type: 'folder',
-          children: {
-            'Header.astro': { type: 'file', content: '---\n---\n\n<header class="header">\n  <nav>\n    <a href="/">ホーム</a>\n    <a href="/about">会社概要</a>\n    <a href="/contact">お問い合わせ</a>\n  </nav>\n</header>\n\n<style>\n.header {\n  background: #f8f9fa;\n  padding: 1rem;\n}\n</style>' },
-            'Footer.astro': { type: 'file', content: '---\n---\n\n<footer class="footer">\n  <p>&copy; 2024 株式会社サンプル. All rights reserved.</p>\n</footer>\n\n<style>\n.footer {\n  background: #343a40;\n  color: white;\n  text-align: center;\n  padding: 2rem;\n}\n</style>' }
-          }
-        }
-      }
-    },
-    'public': {
-      type: 'folder',
-      children: {
-        'favicon.ico': { type: 'file', content: 'Binary file' },
-        'logo.png': { type: 'file', content: 'Binary file' }
-      }
-    }
-  };
-
-  const recentFiles = [
-    { name: 'news-2024-08.md', path: 'src/content/news/', modified: '2時間前', status: 'draft' },
-    { name: 'about.astro', path: 'src/pages/', modified: '1日前', status: 'published' },
-    { name: 'company-info.md', path: 'src/content/pages/', modified: '3日前', status: 'published' }
-  ];
-
-  const scheduledPosts = [
-    { platform: 'Twitter', content: '新製品リリースのお知らせ...', scheduledFor: '今日 14:00', status: 'pending' },
-    { platform: 'YouTube', content: '会社説明動画の投稿', scheduledFor: '明日 10:00', status: 'pending' },
-    { platform: 'Discord', content: 'コミュニティへのお知らせ', scheduledFor: '今日 18:00', status: 'scheduled' }
-  ];
 
   // データ永続化関数
   const saveToStorage = (data) => {
@@ -1538,6 +1710,8 @@ const CMS_SNS_Tool = () => {
       )}
     </div>
   );
+
+  const renderSNS = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">SNS投稿管理</h2>
@@ -1652,1076 +1826,4 @@ const CMS_SNS_Tool = () => {
             </div>
           </div>
           <div className="flex space-x-3">
-            <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              <Clock className="w-4 h-4 mr-2" />
-              予約投稿
-            </button>
-            <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-              <Play className="w-4 h-4 mr-2" />
-              今すぐ投稿
-            </button>
-            <button className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-              <Save className="w-4 h-4 mr-2" />
-              下書き保存
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderPreview = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">マルチフレームワーク プレビュー</h2>
-        <div className="flex space-x-3">
-          <select 
-            value={detectedFramework}
-            onChange={(e) => setDetectedFramework(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg"
-          >
-            {Object.entries(supportedFrameworks).map(([key, framework]) => (
-              <option key={key} value={key}>
-                {framework.icon} {framework.name}
-              </option>
-            ))}
-          </select>
-          <select className="px-3 py-2 border border-gray-300 rounded-lg">
-            <option>デスクトップ</option>
-            <option>タブレット</option>
-            <option>モバイル</option>
-          </select>
-          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <Eye className="w-4 h-4 mr-2" />
-            プレビュー更新
-          </button>
-          <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-            <Upload className="w-4 h-4 mr-2" />
-            デプロイ
-          </button>
-        </div>
-      </div>
-
-      {/* フレームワーク情報 */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <span className="text-2xl">{supportedFrameworks[detectedFramework]?.icon}</span>
-            <div>
-              <h3 className="font-semibold text-gray-900">
-                {supportedFrameworks[detectedFramework]?.name} プロジェクト
-              </h3>
-              <p className="text-sm text-gray-600">
-                設定ファイル: {supportedFrameworks[detectedFramework]?.configFiles[0]}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 bg-green-400 rounded-full"></span>
-            <span className="text-sm text-gray-600">自動検出済み</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {/* プレビューURL */}
-        <div className="p-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center space-x-3">
-            <span className="text-sm text-gray-600">プレビューURL:</span>
-            <div className="flex-1 bg-white border border-gray-300 rounded px-3 py-2 text-sm text-gray-700">
-              {getPreviewUrl(detectedFramework)}
-            </div>
-            <button className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
-              開く
-            </button>
-          </div>
-        </div>
-
-        {/* プレビュー画面 */}
-        <div className="p-6">
-          {selectedFile ? (
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8">
-              <div className="text-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                  プレビュー: {selectedFile}
-                </h3>
-                <div className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
-                  リアルタイム更新
-                </div>
-              </div>
-
-              {/* フレームワーク別プレビュー */}
-              <FrameworkPreview 
-                framework={detectedFramework}
-                content={fileContent}
-                filePath={selectedFile}
-              />
-            </div>
-          ) : (
-            <div className="bg-gray-100 rounded-lg p-8 text-center">
-              <Eye className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                {supportedFrameworks[detectedFramework]?.name} サイトプレビュー
-              </h3>
-              <p className="text-gray-600 mb-4">
-                編集中のコンテンツがここにリアルタイムで表示されます
-              </p>
-              <button 
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                onClick={() => setActiveTab('content')}
-              >
-                ファイルを選択してプレビュー
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* プレビュー設定 */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">プレビュー設定</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">フレームワーク</label>
-            <select 
-              value={detectedFramework}
-              onChange={(e) => setDetectedFramework(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            >
-              {Object.entries(supportedFrameworks).map(([key, framework]) => (
-                <option key={key} value={key}>
-                  {framework.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">プレビュー環境</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-              <option>開発環境</option>
-              <option>ステージング環境</option>
-              <option>本番環境</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">ビルド設定</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-              <option>自動ビルド</option>
-              <option>手動ビルド</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">更新間隔</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-              <option>リアルタイム</option>
-              <option>5秒</option>
-              <option>10秒</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* フレームワーク固有の設定 */}
-      <FrameworkSpecificSettings framework={detectedFramework} />
-    </div>
-  );
-
-  // フレームワーク固有の設定コンポーネント
-  const FrameworkSpecificSettings = ({ framework }) => {
-    const settings = getFrameworkSettings(framework);
-    
-    if (!settings || settings.length === 0) return null;
-
-    return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <span className="text-lg mr-2">{supportedFrameworks[framework]?.icon}</span>
-          {supportedFrameworks[framework]?.name} 固有の設定
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {settings.map((setting, index) => (
-            <div key={index}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {setting.label}
-              </label>
-              {setting.type === 'select' ? (
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                  {setting.options.map((option, optIndex) => (
-                    <option key={optIndex} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              ) : setting.type === 'boolean' ? (
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2" defaultChecked={setting.defaultValue} />
-                  <span className="text-sm">{setting.description}</span>
-                </label>
-              ) : (
-                <input
-                  type={setting.type}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  placeholder={setting.placeholder}
-                  defaultValue={setting.defaultValue}
-                />
-              )}
-              {setting.description && setting.type !== 'boolean' && (
-                <p className="mt-1 text-xs text-gray-500">{setting.description}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // プレビューURL生成
-  const getPreviewUrl = (framework) => {
-    const baseUrls = {
-      astro: 'http://localhost:3000',
-      nextjs: 'http://localhost:3000',
-      nuxt: 'http://localhost:3000',
-      svelte: 'http://localhost:5173',
-      gatsby: 'http://localhost:8000',
-      remix: 'http://localhost:3000',
-      hugo: 'http://localhost:1313',
-      jekyll: 'http://localhost:4000'
-    };
-    
-    return baseUrls[framework] || 'http://localhost:3000';
-  };
-
-  // フレームワーク固有設定を取得
-  const getFrameworkSettings = (framework) => {
-    const settingsMap = {
-      astro: [
-        {
-          label: 'Output Mode',
-          type: 'select',
-          options: [
-            { value: 'static', label: 'Static Site Generation' },
-            { value: 'server', label: 'Server Side Rendering' },
-            { value: 'hybrid', label: 'Hybrid Rendering' }
-          ],
-          defaultValue: 'static'
-        },
-        {
-          label: 'Integrations',
-          type: 'text',
-          placeholder: '@astrojs/tailwind, @astrojs/react',
-          description: 'カンマ区切りで統合機能を指定'
-        }
-      ],
-      nextjs: [
-        {
-          label: 'App Router',
-          type: 'boolean',
-          defaultValue: true,
-          description: 'App Router を使用する'
-        },
-        {
-          label: 'Output',
-          type: 'select',
-          options: [
-            { value: 'standalone', label: 'Standalone' },
-            { value: 'export', label: 'Static Export' }
-          ],
-          defaultValue: 'standalone'
-        }
-      ],
-      nuxt: [
-        {
-          label: 'Rendering Mode',
-          type: 'select',
-          options: [
-            { value: 'spa', label: 'Single Page Application' },
-            { value: 'ssr', label: 'Server Side Rendering' },
-            { value: 'ssg', label: 'Static Site Generation' }
-          ],
-          defaultValue: 'ssr'
-        },
-        {
-          label: 'Nuxt Content',
-          type: 'boolean',
-          defaultValue: true,
-          description: '@nuxt/content モジュールを使用'
-        }
-      ],
-      svelte: [
-        {
-          label: 'Adapter',
-          type: 'select',
-          options: [
-            { value: 'auto', label: 'Auto' },
-            { value: 'static', label: 'Static' },
-            { value: 'vercel', label: 'Vercel' },
-            { value: 'netlify', label: 'Netlify' }
-          ],
-          defaultValue: 'auto'
-        }
-      ],
-      gatsby: [
-        {
-          label: 'GraphQL Playground',
-          type: 'boolean',
-          defaultValue: true,
-          description: 'GraphQL Playground を有効にする'
-        },
-        {
-          label: 'Fast Refresh',
-          type: 'boolean',
-          defaultValue: true,
-          description: 'Fast Refresh を有効にする'
-        }
-      ],
-      remix: [
-        {
-          label: 'Server Build Target',
-          type: 'select',
-          options: [
-            { value: 'vercel', label: 'Vercel' },
-            { value: 'netlify', label: 'Netlify' },
-            { value: 'node', label: 'Node.js' }
-          ],
-          defaultValue: 'node'
-        }
-      ],
-      hugo: [
-        {
-          label: 'Base URL',
-          type: 'text',
-          placeholder: 'https://example.com',
-          description: 'サイトのベースURL'
-        },
-        {
-          label: 'Language Code',
-          type: 'text',
-          placeholder: 'ja',
-          defaultValue: 'ja',
-          description: 'サイトの言語コード'
-        }
-      ],
-      jekyll: [
-        {
-          label: 'Markdown Engine',
-          type: 'select',
-          options: [
-            { value: 'kramdown', label: 'Kramdown' },
-            { value: 'redcarpet', label: 'Redcarpet' }
-          ],
-          defaultValue: 'kramdown'
-        },
-        {
-          label: 'Highlighter',
-          type: 'select',
-          options: [
-            { value: 'rouge', label: 'Rouge' },
-            { value: 'pygments', label: 'Pygments' }
-          ],
-          defaultValue: 'rouge'
-        }
-      ]
-    };
-    
-    return settingsMap[framework] || [];
-  };
-
-  // 初期化時にフレームワークを自動検出
-  useEffect(() => {
-    detectFramework();
-  }, [detectFramework]);
-
-  // ファイル変更時にプレビューを更新
-  useEffect(() => {
-    if (selectedFile && fileContent) {
-      // デバウンス処理でプレビュー更新
-      const timer = setTimeout(() => {
-        // プレビュー更新処理
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [selectedFile, fileContent]);
-
-  const renderAnalytics = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">解析・分析</h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">SNSエンゲージメント</h3>
-          <div className="bg-gray-100 rounded-lg p-8 text-center">
-            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">分析グラフが表示されます</p>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">トレンド分析</h3>
-          <div className="bg-gray-100 rounded-lg p-8 text-center">
-            <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">トレンドデータが表示されます</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderSettings = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">設定</h2>
-      
-      {/* データ永続化設定 */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <Save className="w-5 h-5 mr-2" />
-          データ永続化設定
-        </h3>
-        
-        <div className="space-y-4">
-          {/* 自動保存設定 */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <h4 className="font-medium text-gray-900">自動保存</h4>
-              <p className="text-sm text-gray-600">データを自動的に保存します</p>
-            </div>
-            <label className="flex items-center">
-              <input 
-                type="checkbox" 
-                checked={autoSave}
-                onChange={(e) => setAutoSave(e.target.checked)}
-                className="mr-2"
-              />
-              <span className="text-sm">{autoSave ? '有効' : '無効'}</span>
-            </label>
-          </div>
-
-          {/* ストレージ状態 */}
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-3">ストレージ状態</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className={`w-4 h-4 rounded-full mx-auto mb-2 ${
-                  storageStatus === 'saved' ? 'bg-green-400' :
-                  storageStatus === 'error' ? 'bg-red-400' : 'bg-blue-400'
-                }`}></div>
-                <p className="text-sm font-medium text-gray-900">
-                  {storageStatus === 'saved' ? '保存済み' :
-                   storageStatus === 'error' ? 'エラー' : '同期中'}
-                </p>
-                <p className="text-xs text-gray-600">現在の状態</p>
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-bold text-gray-900">{getAllTemplates().length}</p>
-                <p className="text-sm text-gray-600">保存済みテンプレート</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-900">{lastSaved.split(' ')[1]?.substring(0,8)}</p>
-                <p className="text-xs text-gray-600">最終保存時刻</p>
-              </div>
-            </div>
-          </div>
-
-          {/* データ管理 */}
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-3">データ管理</h4>
-            <div className="flex space-x-3">
-              <button 
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                onClick={() => saveToStorage(templates)}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                手動保存
-              </button>
-              <button 
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                onClick={() => {
-                  const dataStr = JSON.stringify(templates, null, 2);
-                  const dataBlob = new Blob([dataStr], {type: 'application/json'});
-                  const url = URL.createObjectURL(dataBlob);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = 'cms_templates_backup.json';
-                  link.click();
-                }}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                データエクスポート
-              </button>
-              <button 
-                className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-                onClick={() => {
-                  if (window.confirm('全てのテンプレートデータを削除しますか？この操作は取り消せません。')) {
-                    const emptyTemplates = { news: [], sns: [], pages: [] };
-                    updateTemplates(emptyTemplates);
-                  }
-                }}
-              >
-                <X className="w-4 h-4 mr-2" />
-                データクリア
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // フレームワーク別プレビューコンポーネント
-  const FrameworkPreview = ({ framework, content, filePath }) => {
-    const [previewHtml, setPreviewHtml] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const generatePreview = async () => {
-      setIsLoading(true);
-      
-      try {
-        let preview = '';
-        
-        switch (framework) {
-          case 'astro':
-            preview = await renderAstroPreview(content, filePath);
-            break;
-          case 'nextjs':
-            preview = await renderNextPreview(content, filePath);
-            break;
-          case 'nuxt':
-            preview = await renderNuxtPreview(content, filePath);
-            break;
-          case 'svelte':
-            preview = await renderSveltePreview(content, filePath);
-            break;
-          case 'gatsby':
-            preview = await renderGatsbyPreview(content, filePath);
-            break;
-          case 'remix':
-            preview = await renderRemixPreview(content, filePath);
-            break;
-          case 'hugo':
-            preview = await renderHugoPreview(content, filePath);
-            break;
-          case 'jekyll':
-            preview = await renderJekyllPreview(content, filePath);
-            break;
-          default:
-            preview = await renderGenericPreview(content, filePath);
-        }
-        
-        setPreviewHtml(preview);
-      } catch (error) {
-        console.error('プレビュー生成エラー:', error);
-        setPreviewHtml('<div class="error">プレビューの生成に失敗しました</div>');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    useEffect(() => {
-      generatePreview();
-    }, [content, framework, filePath]);
-
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">プレビューを生成中...</p>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="framework-preview">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">{supportedFrameworks[framework]?.icon}</span>
-            <span className="font-medium">{supportedFrameworks[framework]?.name} プレビュー</span>
-          </div>
-          <button
-            onClick={generatePreview}
-            className="flex items-center px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
-          >
-            <RefreshCw className="w-3 h-3 mr-1" />
-            更新
-          </button>
-        </div>
-        
-        <div 
-          className="preview-content border rounded-lg p-4 bg-white"
-          dangerouslySetInnerHTML={{ __html: previewHtml }}
-        />
-      </div>
-    );
-  };
-
-  // Astroプレビュー生成
-  const renderAstroPreview = async (content, filePath) => {
-    const { frontMatter, body } = parseFrontMatterContent(content);
-    
-    if (filePath.endsWith('.md') || filePath.endsWith('.mdx')) {
-      return `
-        <article class="prose max-w-none">
-          <header class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">${frontMatter.title || 'タイトルなし'}</h1>
-            ${frontMatter.publishedAt ? `<time class="text-gray-600">${new Date(frontMatter.publishedAt).toLocaleDateString('ja-JP')}</time>` : ''}
-            ${frontMatter.author ? `<p class="text-gray-600">by ${frontMatter.author}</p>` : ''}
-          </header>
-          <div class="content">
-            ${await renderMarkdownToHtml(body)}
-          </div>
-          ${frontMatter.tags ? `
-            <footer class="mt-6 pt-4 border-t border-gray-200">
-              <div class="flex flex-wrap gap-2">
-                ${frontMatter.tags.map(tag => `<span class="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded">${tag}</span>`).join('')}
-              </div>
-            </footer>
-          ` : ''}
-        </article>
-      `;
-    }
-    
-    // Astroコンポーネントの場合
-    return `
-      <div class="astro-component-preview">
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-          <p class="text-yellow-800">Astroコンポーネントのプレビューです</p>
-        </div>
-        <pre class="bg-gray-100 p-4 rounded-lg overflow-auto"><code>${escapeHtml(content)}</code></pre>
-      </div>
-    `;
-  };
-
-  // Next.jsプレビュー生成
-  const renderNextPreview = async (content, filePath) => {
-    const { frontMatter, body } = parseFrontMatterContent(content);
-    
-    return `
-      <div class="nextjs-preview">
-        <div class="bg-white shadow-sm border rounded-lg">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <div class="flex items-center space-x-2">
-              <span class="text-lg">⚡</span>
-              <span class="font-medium">Next.js Page Preview</span>
-            </div>
-          </div>
-          <div class="p-6">
-            <article>
-              <header class="mb-6">
-                <h1 class="text-3xl font-bold text-gray-900">${frontMatter.title || 'タイトルなし'}</h1>
-                ${frontMatter.description ? `<p class="text-xl text-gray-600 mt-2">${frontMatter.description}</p>` : ''}
-                <div class="flex items-center space-x-4 mt-4 text-sm text-gray-500">
-                  ${frontMatter.publishedAt ? `<time>${new Date(frontMatter.publishedAt).toLocaleDateString('ja-JP')}</time>` : ''}
-                  ${frontMatter.author ? `<span>by ${frontMatter.author}</span>` : ''}
-                  ${frontMatter.readingTime ? `<span>${frontMatter.readingTime}分で読める</span>` : ''}
-                </div>
-              </header>
-              <div class="prose max-w-none">
-                ${await renderMarkdownToHtml(body)}
-              </div>
-            </article>
-          </div>
-        </div>
-      </div>
-    `;
-  };
-
-  // Nuxtプレビュー生成
-  const renderNuxtPreview = async (content, filePath) => {
-    const { frontMatter, body } = parseFrontMatterContent(content);
-    
-    return `
-      <div class="nuxt-preview">
-        <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
-          <div class="flex items-center">
-            <span class="text-lg mr-2">💚</span>
-            <span class="font-medium text-green-800">Nuxt Content Preview</span>
-          </div>
-        </div>
-        <article class="bg-white rounded-lg shadow-sm p-6">
-          <h1 class="text-4xl font-bold text-gray-900 mb-4">${frontMatter.title || 'タイトルなし'}</h1>
-          ${frontMatter.description ? `<p class="text-xl text-gray-600 mb-6">${frontMatter.description}</p>` : ''}
-          <div class="prose max-w-none">
-            ${await renderMarkdownToHtml(body)}
-          </div>
-        </article>
-      </div>
-    `;
-  };
-
-  // SvelteKitプレビュー生成
-  const renderSveltePreview = async (content, filePath) => {
-    const { frontMatter, body } = parseFrontMatterContent(content);
-    
-    return `
-      <div class="svelte-preview">
-        <div class="bg-orange-50 rounded-lg p-4 mb-4">
-          <div class="flex items-center">
-            <span class="text-lg mr-2">🧡</span>
-            <span class="font-medium text-orange-800">SvelteKit Preview</span>
-          </div>
-        </div>
-        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div class="bg-gradient-to-r from-orange-400 to-pink-400 p-4">
-            <h1 class="text-white text-2xl font-bold">${frontMatter.title || 'タイトルなし'}</h1>
-          </div>
-          <div class="p-6">
-            <div class="prose max-w-none">
-              ${await renderMarkdownToHtml(body)}
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  };
-
-  // Gatsbyプレビュー生成
-  const renderGatsbyPreview = async (content, filePath) => {
-    const { frontMatter, body } = parseFrontMatterContent(content);
-    
-    return `
-      <div class="gatsby-preview">
-        <div class="bg-purple-50 rounded-lg p-4 mb-4">
-          <div class="flex items-center">
-            <span class="text-lg mr-2">🟣</span>
-            <span class="font-medium text-purple-800">Gatsby Preview</span>
-          </div>
-        </div>
-        <article class="bg-white shadow-lg rounded-lg overflow-hidden">
-          <header class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6">
-            <h1 class="text-3xl font-bold">${frontMatter.title || 'タイトルなし'}</h1>
-            ${frontMatter.description ? `<p class="text-purple-100 mt-2">${frontMatter.description}</p>` : ''}
-          </header>
-          <div class="p-6">
-            <div class="prose max-w-none">
-              ${await renderMarkdownToHtml(body)}
-            </div>
-          </div>
-        </article>
-      </div>
-    `;
-  };
-
-  // Remixプレビュー生成
-  const renderRemixPreview = async (content, filePath) => {
-    const { frontMatter, body } = parseFrontMatterContent(content);
-    
-    return `
-      <div class="remix-preview">
-        <div class="bg-blue-50 rounded-lg p-4 mb-4">
-          <div class="flex items-center">
-            <span class="text-lg mr-2">🎵</span>
-            <span class="font-medium text-blue-800">Remix Preview</span>
-          </div>
-        </div>
-        <main class="bg-white border border-gray-200 rounded-lg p-6">
-          <h1 class="text-3xl font-bold text-gray-900 mb-4">${frontMatter.title || 'タイトルなし'}</h1>
-          <div class="prose max-w-none">
-            ${await renderMarkdownToHtml(body)}
-          </div>
-        </main>
-      </div>
-    `;
-  };
-
-  // Hugoプレビュー生成
-  const renderHugoPreview = async (content, filePath) => {
-    const { frontMatter, body } = parseFrontMatterContent(content);
-    
-    return `
-      <div class="hugo-preview">
-        <div class="bg-pink-50 rounded-lg p-4 mb-4">
-          <div class="flex items-center">
-            <span class="text-lg mr-2">⚡</span>
-            <span class="font-medium text-pink-800">Hugo Preview</span>
-          </div>
-        </div>
-        <article class="bg-white border border-gray-200 rounded-lg p-6">
-          <header class="mb-6">
-            <h1 class="text-4xl font-bold text-gray-900">${frontMatter.title || 'タイトルなし'}</h1>
-            <div class="mt-4 text-sm text-gray-500">
-              ${frontMatter.date ? `<time>Published: ${new Date(frontMatter.date).toLocaleDateString('ja-JP')}</time>` : ''}
-              ${frontMatter.categories ? `<span class="ml-4">Categories: ${frontMatter.categories.join(', ')}</span>` : ''}
-            </div>
-          </header>
-          <div class="prose max-w-none">
-            ${await renderMarkdownToHtml(body)}
-          </div>
-        </article>
-      </div>
-    `;
-  };
-
-  // Jekyllプレビュー生成
-  const renderJekyllPreview = async (content, filePath) => {
-    const { frontMatter, body } = parseFrontMatterContent(content);
-    
-    return `
-      <div class="jekyll-preview">
-        <div class="bg-red-50 rounded-lg p-4 mb-4">
-          <div class="flex items-center">
-            <span class="text-lg mr-2">💎</span>
-            <span class="font-medium text-red-800">Jekyll Preview</span>
-          </div>
-        </div>
-        <article class="bg-white border border-gray-200 rounded-lg p-6">
-          <header class="border-b border-gray-200 pb-4 mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">${frontMatter.title || 'タイトルなし'}</h1>
-            <div class="mt-2 text-sm text-gray-500">
-              ${frontMatter.date ? `<time>${new Date(frontMatter.date).toLocaleDateString('ja-JP')}</time>` : ''}
-              ${frontMatter.author ? ` • by ${frontMatter.author}` : ''}
-            </div>
-          </header>
-          <div class="prose max-w-none">
-            ${await renderMarkdownToHtml(body)}
-          </div>
-        </article>
-      </div>
-    `;
-  };
-
-  // 汎用プレビュー生成
-  const renderGenericPreview = async (content, filePath) => {
-    const { frontMatter, body } = parseFrontMatterContent(content);
-    
-    return `
-      <div class="generic-preview">
-        <article class="bg-white border border-gray-200 rounded-lg p-6">
-          <h1 class="text-3xl font-bold text-gray-900 mb-4">${frontMatter.title || 'タイトルなし'}</h1>
-          <div class="prose max-w-none">
-            ${await renderMarkdownToHtml(body)}
-          </div>
-        </article>
-      </div>
-    `;
-  };
-
-  // フロントマターとボディを分離
-  const parseFrontMatterContent = (content) => {
-    const frontMatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-    
-    if (frontMatterMatch) {
-      return {
-        frontMatter: parseFrontMatter(frontMatterMatch[1]),
-        body: frontMatterMatch[2]
-      };
-    }
-    
-    return {
-      frontMatter: {},
-      body: content
-    };
-  };
-
-  // マークダウンをHTMLに変換
-  const renderMarkdownToHtml = async (markdown) => {
-    // 簡易的なマークダウンパーサー（実際の実装では marked や remark を使用）
-    return markdown
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-      .replace(/\[([^\]]+)\]\(([^\)]+)\)/gim, '<a href="$2">$1</a>')
-      .replace(/\n/gim, '<br>');
-  };
-
-  // HTMLエスケープ
-  const escapeHtml = (text) => {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  };
-
-  const renderContent_Tab = () => {
-    switch(activeTab) {
-      case 'dashboard': 
-        return renderDashboard();
-      case 'content': 
-        return renderContent();
-      case 'schema':
-        return renderSchemaAnalysis();
-      case 'templates':
-        return renderTemplates();
-      case 'sns': 
-        return renderSNS();
-      case 'preview': 
-        return renderPreview();
-      case 'analytics': 
-        return renderAnalytics();
-      case 'settings':
-        return renderSettings();
-      default: 
-        return renderDashboard();
-    }
-  };
-
-  return (
-    <div className="flex h-screen bg-gray-50">
-      {/* サイドバー */}
-      <div className="w-64 bg-white shadow-sm border-r border-gray-200">
-        <div className="p-6">
-          <h1 className="text-xl font-bold text-gray-900">CMS & SNS Tool</h1>
-          <p className="text-sm text-gray-600">Astro対応</p>
-        </div>
-        
-        <nav className="px-4 space-y-2">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center px-3 py-2 text-left rounded-lg transition-colors ${
-                  activeTab === item.id
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <Icon className="w-5 h-5 mr-3" />
-                {item.name}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* GitHub接続状況 */}
-        <div className="mt-8 mx-4 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center mb-2">
-            <Github className="w-5 h-5 text-gray-600 mr-2" />
-            <span className="text-sm font-medium text-gray-900">GitHub接続</span>
-          </div>
-          <div className="flex items-center">
-            <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-            <span className="text-xs text-gray-600">接続済み</span>
-          </div>
-        </div>
-
-        {/* データストレージ状況 */}
-        <div className="mx-4 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center mb-2">
-            <Save className="w-5 h-5 text-gray-600 mr-2" />
-            <span className="text-sm font-medium text-gray-900">データストレージ</span>
-          </div>
-          <div className="flex items-center mb-1">
-            <span className={`w-2 h-2 rounded-full mr-2 ${
-              storageStatus === 'saved' ? 'bg-green-400' :
-              storageStatus === 'error' ? 'bg-red-400' : 'bg-blue-400 animate-pulse'
-            }`}></span>
-            <span className="text-xs text-gray-600">
-              {storageStatus === 'saved' ? '保存済み' :
-               storageStatus === 'error' ? 'エラー' : '同期中'}
-            </span>
-          </div>
-          <div className="text-xs text-gray-500">
-            {autoSave ? '自動保存: 有効' : '自動保存: 無効'}
-          </div>
-          <div className="text-xs text-gray-500">
-            最終保存: {lastSaved.split(' ')[1]?.substring(0,5) || '--:--'}
-          </div>
-        </div>
-      </div>
-
-      {/* メインコンテンツ */}
-      <div className="flex-1 overflow-hidden">
-        <div className={`h-full ${activeTab === 'content' ? '' : 'p-8 overflow-auto'}`}>
-          {renderContent_Tab()}
-        </div>
-      </div>
-
-      {/* テンプレート選択モーダル（グローバル） */}
-      {showTemplateModal && (activeTab === 'content' || activeTab === 'sns') && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[80vh] overflow-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                <File className="w-6 h-6 text-purple-600 mr-2" />
-                テンプレート選択
-              </h3>
-              <button 
-                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                onClick={() => setShowTemplateModal(false)}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* カテゴリフィルター */}
-            <div className="flex space-x-2 mb-6">
-              {[
-                { id: 'all', name: 'すべて' },
-                { id: 'news', name: 'ニュース' },
-                { id: 'sns', name: 'SNS投稿' },
-                { id: 'pages', name: 'ページ' }
-              ].map(category => (
-                <button
-                  key={category.id}
-                  onClick={() => setTemplateCategory(category.id)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    templateCategory === category.id
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-
-            {/* テンプレート一覧 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-auto">
-              {getFilteredTemplates().map(template => (
-                <div key={template.id} className="bg-gray-50 p-4 rounded-lg border hover:border-blue-300 transition-colors">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-medium text-gray-900 text-sm">{template.name}</h4>
-                    <span className={`px-2 py-1 text-xs rounded ${
-                      template.category === 'news' ? 'bg-blue-100 text-blue-800' :
-                      template.category === 'sns' ? 'bg-green-100 text-green-800' :
-                      'bg-purple-100 text-purple-800'
-                    }`}>
-                      {template.category === 'news' ? 'ニュース' :
-                       template.category === 'sns' ? 'SNS' : 'ページ'}
-                    </span>
-                  </div>
-                  
-                  <div className="bg-white rounded p-2 mb-3 max-h-20 overflow-hidden">
-                    <pre className="text-xs text-gray-600 whitespace-pre-wrap">
-                      {template.content.substring(0, 100)}...
-                    </pre>
-                  </div>
-
-                  {/* タグ表示 */}
-                  {template.tags && template.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {template.tags.slice(0, 3).map((tag, index) => (
-                        <span key={index} className="px-1 py-0.5 bg-gray-200 text-gray-600 text-xs rounded">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <button 
-                    className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
-                    onClick={() => applyTemplate(template)}
-                  >
-                    <Check className="w-4 h-4 mr-1" />
-                    適用
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                {getFilteredTemplates().length}件のテンプレートが見つかりました
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default CMS_SNS_Tool;
+            <button className
