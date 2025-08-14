@@ -1,0 +1,55 @@
+{
+  "name": "astro-cms-sns-tool",
+  "version": "1.0.0",
+  "description": "Astro CMS & SNS自動投稿ツール",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext ts,tsx --fix",
+    "type-check": "tsc --noEmit",
+    "setup": "node -e \"const os = require('os'); const { execSync } = require('child_process'); const platform = os.platform(); if (platform === 'win32') { try { execSync('powershell -ExecutionPolicy Bypass -File setup.ps1', { stdio: 'inherit' }); } catch { execSync('setup.bat', { stdio: 'inherit' }); } } else { execSync('chmod +x setup.sh && ./setup.sh', { stdio: 'inherit' }); }\"",
+    "setup:clean": "rm -rf node_modules package-lock.json && npm install"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.263.1",
+    "clsx": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "autoprefixer": "^10.4.14",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "postcss": "^8.4.27",
+    "tailwindcss": "^3.3.3",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5"
+  },
+  "keywords": [
+    "astro",
+    "cms",
+    "sns",
+    "react",
+    "typescript",
+    "tailwindcss"
+  ],
+  "author": "Astro CMS Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/astro-cms-sns-tool.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/astro-cms-sns-tool/issues"
+  },
+  "homepage": "https://github.com/your-org/astro-cms-sns-tool#readme"
+}

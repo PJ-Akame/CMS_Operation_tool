@@ -1,0 +1,132 @@
+.App {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #f9fafb;
+}
+
+/* グローバルスタイルの調整 */
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* アプリケーション固有のスタイル */
+.cms-main-container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.cms-sidebar {
+  width: 16rem; /* w-64 */
+  background-color: white;
+  border-right: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.cms-content {
+  flex: 1;
+  overflow: hidden;
+  background-color: #f9fafb;
+}
+
+/* ファイルツリーのスタイル調整 */
+.file-tree-container {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
+}
+
+/* エディター部分のスタイル */
+.editor-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-header {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem;
+}
+
+.editor-tabs {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.editor-content {
+  flex: 1;
+  background-color: #f9fafb;
+}
+
+/* モーダルのz-index調整 */
+.template-modal {
+  z-index: 1000;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .cms-main-container {
+    flex-direction: column;
+  }
+  
+  .cms-sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .cms-content {
+    height: calc(100vh - 200px);
+  }
+}
+
+/* スクロールバーのカスタマイズ（WebKit） */
+.file-tree-container::-webkit-scrollbar,
+.editor-content textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.file-tree-container::-webkit-scrollbar-track,
+.editor-content textarea::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.file-tree-container::-webkit-scrollbar-thumb,
+.editor-content textarea::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.file-tree-container::-webkit-scrollbar-thumb:hover,
+.editor-content textarea::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* フォーカス時のアウトライン調整 */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* アニメーションの最適化 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
